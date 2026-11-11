@@ -147,7 +147,9 @@ data class ArtistProfile(
 
 @Serializable
 data class ArtistBiography(
-    val text: String,
+    // Spotify sends `"text": null` for artists without a bio; a non-null field made the whole
+    // artist query fail to decode.
+    val text: String? = null,
 )
 
 @Serializable

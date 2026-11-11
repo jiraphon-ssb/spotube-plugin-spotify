@@ -1,0 +1,50 @@
+name: Build plugin (artifact only)
+
+# Same build as release.yml's "build" job, without publishing a GitHub release.
+# Produces plugin-production.smplug as a workflow artifact for local install/testing.
+on:
+  push:
+    branches: ["fix/**"]
+  workflow_dispatch:
+
+env:
+  MODULE: spotube_plugin_spotify
+
+jobs:
+  build:
+    name: Build .smplug
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v7
+
+      - name: Install JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - name: Configure Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Write buildkonfig placeholders
+        run: |
+          for dir in "$MODULE" spotify_gql_client; do
+            {
+              echo "accessToken=placeholder"
+              echo "spDcCookie=placeholder"
+              echo "spTCookie=placeholder"
+            } > "$dir/local.properties"
+          done
+
+      - name: Package production plugin
+        run: |
+          chmod +x gradlew
+          ./gradlew ":$MODULE:packageProductionPlugin"
+
+      - name: Upload build output
+        uses: actions/upload-artifact@v4
+        with:
+          name: spotify-smplug
+          path: ${{ env.MODULE }}/build/distributions/plugin-production.smplug
+          if-no-files-found: error
